@@ -4,6 +4,7 @@
 
 // Import the discord.js module
 const Discord = require("discord.js");
+const { MessageEmbed } = require("discord.js");
 const SpotifyWebApi = require("spotify-web-api-node");
 
 // Create an instance of a Discord client
@@ -13,6 +14,7 @@ const client = new Discord.Client();
  * The ready event is vital, it means that only _after_ this will your bot start reacting to information
  * received from Discord
  */
+const subs = [];
 client.on("ready", () => {
   console.log("I am ready!");
 });
@@ -20,9 +22,28 @@ client.on("ready", () => {
 // Create an event listener for messages
 client.on("message", (message) => {
   // If the message is "ping"
-  if (message.content === "Ingatkan saya!") {
+  if (message.content === "!btk ingatkan saya") {
+    subs.push(message.channel.id);
+  }
+});
+
+client.on("message", (message) => {
+  // If the message is "ping"
+  if (message.content === "!btk test") {
+    subs.forEach((id) => {
+      const channel = client.channels.cache.get(id);
+      channel.send(
+        "Terimakasih telah berlangganan, tetapi belum ada update saat ini!"
+      );
+    });
+  }
+});
+
+// Create an event listener for messages
+client.on("message", (message) => {
+  // If the message is "ping"
+  if (message.content === "episode terbaru") {
     // Send "pong" to the same channel
-    message.channel.send("Baik saya akan mengingatkan anda jika ada updates!");
     const SpotifyWebApi = require("spotify-web-api-node");
 
     // Mendapatkan token akses
@@ -33,27 +54,45 @@ client.on("message", (message) => {
 
     spotifyApi.clientCredentialsGrant().then(
       function (data) {
-        console.log(data.body);
         console.log("The access token is " + data.body["access_token"]);
         spotifyApi.setAccessToken(data.body["access_token"]);
+        // Mendapatkan daftar episode dari podcast tertentu
+        spotifyApi
+          .getShowEpisodes("3faUdSrg8gMY9Pf9wzSiaK", {
+            market: "id",
+          })
+          .then(
+            function (data) {
+              const episodes = data.body.items;
+              const embed = new MessageEmbed()
+                .setColor(0x0099ff)
+                .setTitle(episodes[0].name)
+                .setURL(`https://open.spotify.com/episode/${episodes[0].id}`)
+                .setAuthor("bandungtanpakamu")
+                .setDescription(episodes[0].description)
+                .setThumbnail(episodes[0].images[0].url)
+                .setImage(episodes[0].images[0].url)
+                .setTimestamp();
+              // Send the embed to the same channel as the message
+              message.channel.send(embed);
+              // console.log(episodes[0]);
+              // message.channel.send(
+              //   `Episode terbaru di podcast Bandung Tanpa Kamu berjudul " ${episodes[0].name} "`
+              // );
+              // message.channel.send(
+              //   `Dengarkan di link berikut https://open.spotify.com/episode/${episodes[0].id}`
+              // );
+            },
+            function (err) {
+              console.error("show Episode Error", err);
+            }
+          );
       },
       function (err) {
         console.log(
           "Something went wrong when retrieving an access token",
           err
         );
-      }
-    );
-
-    // Mendapatkan daftar episode dari podcast tertentu
-    spotifyApi.getShowEpisodes("3faUdSrg8gMY9Pf9wzSiaK", { limit: 10 }).then(
-      function (data) {
-        console.log("Retrieved episodes", data.body);
-        const episodes = data.body.items;
-        console.log(episodes);
-      },
-      function (err) {
-        console.error("show Episode Error".err);
       }
     );
   }
